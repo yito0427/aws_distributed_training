@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+import os
+import json
+import sys
+import traceback
+import lightgbm as lgb
+
+
+# sagemakerがデータを渡すためにコンテナにマウントするパス
+prefix = '/opt/ml/'
+input_path = prefix + 'input/data'
+output_path = os.path.join(prefix, 'output')
+model_path = os.path.join(prefix, 'model')
+param_path = os.path.join(prefix, 'input/config/hyperparameters.json')
+inputdataconfig_path = os.path.join(prefix, 'input/config/inputdataconfig.json')
+
+
+# 有効なデータチャネル(Fileモードのみ対応)
+valid_channel_names = ['train', 'validation']
+
+
+def train():
+    print('Starting the training.')
+    try:
+        # ハイパーパラメータを読み込みます
+        with open(param_path, 'r') as f:
+            hyperparams = json.load(f)
+
+        # 入力データコンフィグを読み込みます
+        with open(inputdataconfig_path, 'r') as f:
+            inputdataconfig = json.load(f)
+
+        # 入力データを読み込みます。
+        inputdata_dic = {}
+        for channel_name in inputdataconfig.keys():
+            assert channel_name in valid_channel_names, 'input data channel must be included in '+str(valid_channel_names)
+            inputdata_path = os.path.join(input_path, channel_name, channel_name+'.bin')
+            inputdata_dic[channel_name] = lgb.Dataset(inputdata_path)
+
+
+        # light-gbmで学習
+        model = lgb.train(
+            hyperparams,
+            inputdata_dic['train'],
+            valid_sets= [inputdata_dic['validation']] if 'validation' in inputdata_dic else None
+        )
+
+        # モデルを保存
+        model.save_model(os.path.join(model_path, 'lightgbm_model.txt'))
+        print('Training complete.')
+
+    except Exception as e:
+        # 何かエラーが発生したら、その内容をfailureに吐き出すことで失敗理由を伝達する
+        trc = traceback.format_exc()
+        with open(os.path.join(output_path, 'failure'), 'w') as s:
+            s.write('Exception during training: ' + str(e) + '\n' + trc)
+        # 標準出力に出すことでログにも送る
+        print('Exception during training: ' + str(e) + '\n' + trc, file=sys.stderr)
+        # 0以外の値を返すことで実行失敗を伝える
+        sys.exit(255)
+
+if __name__ == '__main__':
+    train()
+
+    # 0を返すことで実行成功を伝える
+    sys.exit(0)
