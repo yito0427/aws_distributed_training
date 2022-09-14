@@ -1,12 +1,7 @@
-# Build an image that can do training and inference in SageMaker
-# This is a Python 3 image that uses the nginx, gunicorn, flask stack
-# for serving inferences in a stable way.
-
 FROM ubuntu:18.04
 
-MAINTAINER Amazon AI <sage-learner@amazon.com>
-
-
+# 必要なパッケージをインストールします
+# インストールによって生じる不要なファイルは削除します
 RUN apt -y update && apt install -y --no-install-recommends \
     wget \
     python3-distutils \
@@ -15,24 +10,23 @@ RUN apt -y update && apt install -y --no-install-recommends \
     libgomp1 \
     && apt clean
 
-# Here we get all python packages.
-# There's substantial overlap between scipy and numpy that we eliminate by
-# linking them together. Likewise, pip leaves the install caches populated which uses
-# a significant amount of space. These optimizations save a fair amount of space in the
-# image, which reduces start up time.
+# pythonパッケージをインストールします
+# キャッシュファイルは重たいので、削除しておきます
 RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
     pip install wheel numpy scipy scikit-learn pandas lightgbm flask gevent gunicorn && \
     rm -rf /root/.cache
 
-# Set some environment variables. PYTHONUNBUFFERED keeps Python from buffering our standard
-# output stream, which means that logs can be delivered to the user quickly. PYTHONDONTWRITEBYTECODE
-# keeps Python from writing the .pyc files which are unnecessary in this case. We also update
-# PATH so that the train and serve programs are found when the container is invoked.
+# 環境変数の設定
 
+# pythonからの出力をバッファしないようにする（ログが早く届くようにするため）
 ENV PYTHONUNBUFFERED=TRUE
+# .pycファイルを作成しないようにする
 ENV PYTHONDONTWRITEBYTECODE=TRUE
+# スクリプトがあるディレクトリへパスを通しておく(コンテナ起動時に実行するtrainとserveファイルのパスを意識しないで済むようにするため)
 ENV PATH="/opt/program:${PATH}"
 
-# Set up the program in the image
-COPY src /opt/program
+# スクリプトをコピーする
+COPY lightgbm_container /opt/program
+
+# 作業ディレクトリを設定する
 WORKDIR /opt/program

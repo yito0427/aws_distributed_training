@@ -1,0 +1,15 @@
+Exception during training: Cannot open data file ./data/input/data/train/train.bin
+Traceback (most recent call last):
+  File "/tmp/ipykernel_30731/2087304793.py", line 52, in train
+    model = lgb.train(
+  File "/home/ec2-user/anaconda3/envs/python3/lib/python3.8/site-packages/lightgbm/engine.py", line 271, in train
+    booster = Booster(params=params, train_set=train_set)
+  File "/home/ec2-user/anaconda3/envs/python3/lib/python3.8/site-packages/lightgbm/basic.py", line 2605, in __init__
+    train_set.construct()
+  File "/home/ec2-user/anaconda3/envs/python3/lib/python3.8/site-packages/lightgbm/basic.py", line 1815, in construct
+    self._lazy_init(self.data, label=self.label,
+  File "/home/ec2-user/anaconda3/envs/python3/lib/python3.8/site-packages/lightgbm/basic.py", line 1528, in _lazy_init
+    _safe_call(_LIB.LGBM_DatasetCreateFromFile(
+  File "/home/ec2-user/anaconda3/envs/python3/lib/python3.8/site-packages/lightgbm/basic.py", line 125, in _safe_call
+    raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
+lightgbm.basic.LightGBMError: Cannot open data file ./data/input/data/train/train.bin

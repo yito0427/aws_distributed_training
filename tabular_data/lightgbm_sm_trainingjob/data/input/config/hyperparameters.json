@@ -1,0 +1,5 @@
+{
+"num_round": 10,
+"objective": "multiclass",
+"num_class": 3
+}
